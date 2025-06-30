@@ -2,6 +2,7 @@ package redditclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 )
 
 // Authenticate performs OAuth authentication
-func (c *Client) Authenticate() error {
+func (c *Client) Authenticate(ctx context.Context) error {
 	// OAuth Client ID for Reddit Android app
 	auth := base64.StdEncoding.EncodeToString([]byte(ANDROID_CLIENT_ID + ":"))
 
@@ -22,7 +23,7 @@ func (c *Client) Authenticate() error {
 		return fmt.Errorf("failed to unmarshal json response body: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", "https://www.reddit.com/auth/v2/oauth/access-token/loid", bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://www.reddit.com/auth/v2/oauth/access-token/loid", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

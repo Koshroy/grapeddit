@@ -2,6 +2,7 @@ package redditclient
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -76,7 +77,7 @@ func (c *Client) readResponseBody(resp *http.Response) ([]byte, error) {
 }
 
 // makeAPIRequest handles common API request logic
-func (c *Client) makeAPIRequest(endpoint string, params url.Values) ([]byte, error) {
+func (c *Client) makeAPIRequest(ctx context.Context, endpoint string, params url.Values) ([]byte, error) {
 	if c.accessToken == "" {
 		return nil, fmt.Errorf("not authenticated")
 	}
@@ -91,7 +92,7 @@ func (c *Client) makeAPIRequest(endpoint string, params url.Values) ([]byte, err
 		fullURL += "?" + params.Encode()
 	}
 
-	req, err := http.NewRequest("GET", fullURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -129,20 +130,31 @@ func (c *Client) makeAPIRequest(endpoint string, params url.Values) ([]byte, err
 	// Check for restricted content errors
 	var errorResp ErrorResponse
 	if json.Unmarshal(body, &errorResp) == nil && errorResp.Reason != "" {
-		return c.handleRestrictedContent(req, errorResp.Reason)
+		return c.handleRestrictedContent(ctx, req, errorResp.Reason)
 	}
 
 	return body, nil
 }
 
 // handleRestrictedContent handles gated/quarantined content
-func (c *Client) handleRestrictedContent(originalReq *http.Request, reason string) ([]byte, error) {
+func (c *Client) handleRestrictedContent(ctx context.Context, originalReq *http.Request, reason string) ([]byte, error) {
 	switch reason {
 	case "gated", "quarantined":
-		// Retry with cookie to accept content warning
-		originalReq.Header.Set("Cookie", CONTENT_WARNING_ACCEPT_COOKIE)
+		// Create a new request with the same context to avoid modifying the original
+		retryReq, err := http.NewRequestWithContext(ctx, originalReq.Method, originalReq.URL.String(), originalReq.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create retry request: %w", err)
+		}
+		
+		// Copy headers from original request
+		for k, v := range originalReq.Header {
+			retryReq.Header[k] = v
+		}
+		
+		// Add cookie to accept content warning
+		retryReq.Header.Set("Cookie", CONTENT_WARNING_ACCEPT_COOKIE)
 
-		resp, err := c.httpClient.Do(originalReq)
+		resp, err := c.httpClient.Do(retryReq)
 		if err != nil {
 			return nil, fmt.Errorf("retry request failed: %w", err)
 		}

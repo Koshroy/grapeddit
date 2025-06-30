@@ -1,6 +1,7 @@
 package redditclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -8,10 +9,10 @@ import (
 )
 
 // GetSubreddit fetches subreddit listings
-func (c *Client) GetSubreddit(subreddit, sort string) (*SubredditListing, error) {
+func (c *Client) GetSubreddit(ctx context.Context, subreddit, sort string) (*SubredditListing, error) {
 	endpoint := fmt.Sprintf("/r/%s/%s.json", subreddit, sort)
 
-	body, err := c.makeAPIRequest(endpoint, nil)
+	body, err := c.makeAPIRequest(ctx, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -26,10 +27,10 @@ func (c *Client) GetSubreddit(subreddit, sort string) (*SubredditListing, error)
 }
 
 // GetPost fetches a specific post and comments
-func (c *Client) GetPost(subreddit, postID string) (*PostResponse, error) {
+func (c *Client) GetPost(ctx context.Context, subreddit, postID string) (*PostResponse, error) {
 	endpoint := fmt.Sprintf("/r/%s/comments/%s.json", subreddit, postID)
 
-	body, err := c.makeAPIRequest(endpoint, nil)
+	body, err := c.makeAPIRequest(ctx, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43,10 +44,10 @@ func (c *Client) GetPost(subreddit, postID string) (*PostResponse, error) {
 }
 
 // GetUser fetches user information
-func (c *Client) GetUser(username string) (*UserResponse, error) {
+func (c *Client) GetUser(ctx context.Context, username string) (*UserResponse, error) {
 	endpoint := fmt.Sprintf("/user/%s/about.json", username)
 
-	body, err := c.makeAPIRequest(endpoint, nil)
+	body, err := c.makeAPIRequest(ctx, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -60,14 +61,14 @@ func (c *Client) GetUser(username string) (*UserResponse, error) {
 }
 
 // Search performs a Reddit search
-func (c *Client) Search(query, sort, timeframe string) (*SearchResponse, error) {
+func (c *Client) Search(ctx context.Context, query, sort, timeframe string) (*SearchResponse, error) {
 	params := url.Values{
 		"q":    []string{query},
 		"sort": []string{sort},
 		"t":    []string{timeframe},
 	}
 
-	body, err := c.makeAPIRequest("/search.json", params)
+	body, err := c.makeAPIRequest(ctx, "/search.json", params)
 	if err != nil {
 		return nil, err
 	}

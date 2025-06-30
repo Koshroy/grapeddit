@@ -2,6 +2,7 @@ package redditclient
 
 import (
 	"compress/gzip"
+	"context"
 	"net/http"
 	"sync"
 )
@@ -13,11 +14,11 @@ type HTTPClient interface {
 
 // RedditClient interface for testability
 type RedditClient interface {
-	Authenticate() error
-	GetSubreddit(subreddit, sort string) (*SubredditListing, error)
-	GetPost(subreddit, postID string) (*PostResponse, error)
-	GetUser(username string) (*UserResponse, error)
-	Search(query, sort, timeframe string) (*SearchResponse, error)
+	Authenticate(ctx context.Context) error
+	GetSubreddit(ctx context.Context, subreddit, sort string) (*SubredditListing, error)
+	GetPost(ctx context.Context, subreddit, postID string) (*PostResponse, error)
+	GetUser(ctx context.Context, username string) (*UserResponse, error)
+	Search(ctx context.Context, query, sort, timeframe string) (*SearchResponse, error)
 }
 
 // Client implements RedditClient

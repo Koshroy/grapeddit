@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -8,20 +9,22 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+	
 	client, err := redditclient.NewClient(nil)
 	if err != nil {
 		log.Fatalf("Failed to create Reddit client: %v", err)
 	}
 
 	fmt.Println("Authenticating with Reddit...")
-	if err := client.Authenticate(); err != nil {
+	if err := client.Authenticate(ctx); err != nil {
 		log.Fatalf("Authentication failed: %v", err)
 	}
 
 	fmt.Println("Successfully authenticated!")
 
 	// Example: Get posts from r/golang
-	posts, err := client.GetSubreddit("golang", "hot")
+	posts, err := client.GetSubreddit(ctx, "golang", "hot")
 	if err != nil {
 		log.Fatalf("Failed to get subreddit: %v", err)
 	}
