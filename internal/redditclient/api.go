@@ -1,0 +1,81 @@
+package redditclient
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/url"
+)
+
+// GetSubreddit fetches subreddit listings
+func (c *Client) GetSubreddit(subreddit, sort string) (*SubredditListing, error) {
+	endpoint := fmt.Sprintf("/r/%s/%s.json", subreddit, sort)
+
+	body, err := c.makeAPIRequest(endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var listing SubredditListing
+	if err := json.Unmarshal(body, &listing); err != nil {
+		log.Printf("failed to decode subreddit listing %s: %v", string(body), err)
+		return nil, fmt.Errorf("failed to decode subreddit listing: %w", err)
+	}
+
+	return &listing, nil
+}
+
+// GetPost fetches a specific post and comments
+func (c *Client) GetPost(subreddit, postID string) (*PostResponse, error) {
+	endpoint := fmt.Sprintf("/r/%s/comments/%s.json", subreddit, postID)
+
+	body, err := c.makeAPIRequest(endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var post PostResponse
+	if err := json.Unmarshal(body, &post); err != nil {
+		return nil, fmt.Errorf("failed to decode post: %w", err)
+	}
+
+	return &post, nil
+}
+
+// GetUser fetches user information
+func (c *Client) GetUser(username string) (*UserResponse, error) {
+	endpoint := fmt.Sprintf("/user/%s/about.json", username)
+
+	body, err := c.makeAPIRequest(endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var user UserResponse
+	if err := json.Unmarshal(body, &user); err != nil {
+		return nil, fmt.Errorf("failed to decode user: %w", err)
+	}
+
+	return &user, nil
+}
+
+// Search performs a Reddit search
+func (c *Client) Search(query, sort, timeframe string) (*SearchResponse, error) {
+	params := url.Values{
+		"q":    []string{query},
+		"sort": []string{sort},
+		"t":    []string{timeframe},
+	}
+
+	body, err := c.makeAPIRequest("/search.json", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var search SearchResponse
+	if err := json.Unmarshal(body, &search); err != nil {
+		return nil, fmt.Errorf("failed to decode search results: %w", err)
+	}
+
+	return &search, nil
+}
