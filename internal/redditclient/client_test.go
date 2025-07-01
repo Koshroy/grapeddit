@@ -134,6 +134,7 @@ func TestGetSubreddit_Success(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 	client.loid = "test-loid"
 	client.session = "test-session"
 
@@ -194,7 +195,43 @@ func TestGetSubreddit_NotAuthenticated(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "not authenticated")
+	assert.ErrorIs(t, err, ErrNotAuthenticated)
+}
+
+func TestGetPost_NotAuthenticated(t *testing.T) {
+	mockHTTP := &MockHTTPClient{}
+	client, err := NewClient(mockHTTP)
+	require.NoError(t, err)
+
+	result, err := client.GetPost(t.Context(), "golang", "abc123")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrNotAuthenticated)
+}
+
+func TestGetUser_NotAuthenticated(t *testing.T) {
+	mockHTTP := &MockHTTPClient{}
+	client, err := NewClient(mockHTTP)
+	require.NoError(t, err)
+
+	result, err := client.GetUser(t.Context(), "testuser")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrNotAuthenticated)
+}
+
+func TestSearch_NotAuthenticated(t *testing.T) {
+	mockHTTP := &MockHTTPClient{}
+	client, err := NewClient(mockHTTP)
+	require.NoError(t, err)
+
+	result, err := client.Search(t.Context(), "golang", "top", "week")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrNotAuthenticated)
 }
 
 func TestGetPost_Success(t *testing.T) {
@@ -202,6 +239,7 @@ func TestGetPost_Success(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	postResponse := PostResponse{
 		Kind: "Listing",
@@ -244,6 +282,7 @@ func TestGetUser_Success(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	userResponse := UserResponse{
 		Kind: "t2",
@@ -280,6 +319,7 @@ func TestSearch_Success(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	searchResponse := SearchResponse{
 		Kind: "Listing",
@@ -329,6 +369,7 @@ func TestHandleRestrictedContent_Gated(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	// First response with gated content
 	gatedResponse := `{"reason": "gated"}`
@@ -357,6 +398,7 @@ func TestHandleRestrictedContent_Private(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	privateResponse := `{"reason": "private"}`
 
@@ -461,6 +503,7 @@ func TestGzipDecompression(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	// Create gzipped response content
 	var buf bytes.Buffer
@@ -517,6 +560,7 @@ func TestMultipleGzipRequests(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	// Helper function to create gzipped response content
 	createGzippedResponse := func(title string) string {
@@ -562,6 +606,7 @@ func TestContextCancellation(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	// Create a cancelled context
 	ctx, cancel := context.WithCancel(t.Context())
@@ -589,6 +634,7 @@ func TestContextTimeout(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	// Create a context with a very short timeout
 	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Millisecond)
@@ -615,6 +661,7 @@ func TestContextPropagation(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	listing := SubredditListing{
 		Kind: "Listing",
@@ -683,6 +730,7 @@ func TestTestContextTimeout(t *testing.T) {
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
 	client.accessToken = "test-token"
+	client.authenticated = true
 
 	// Mock a slow HTTP response that would exceed the test timeout
 	mockHTTP.On("Do", mock.MatchedBy(func(req *http.Request) bool {

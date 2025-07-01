@@ -61,6 +61,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 	c.accessToken = oauthResp.AccessToken
 	c.loid = resp.Header.Get("x-reddit-loid")
 	c.session = resp.Header.Get("x-reddit-session")
+	c.authenticated = true
 
 	return nil
 }

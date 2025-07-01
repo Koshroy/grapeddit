@@ -10,7 +10,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	
+
 	client, err := redditclient.NewClient(nil)
 	if err != nil {
 		log.Fatalf("Failed to create Reddit client: %v", err)

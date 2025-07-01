@@ -2,8 +2,14 @@ package redditclient
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
+)
+
+// Error variables
+var (
+	ErrNotAuthenticated = errors.New("client is not authenticated - call Authenticate() first")
 )
 
 // HTTPClient interface for dependency injection
@@ -23,6 +29,7 @@ type RedditClient interface {
 // Client implements RedditClient
 type Client struct {
 	httpClient     HTTPClient
+	authenticated  bool
 	accessToken    string
 	loid           string
 	session        string

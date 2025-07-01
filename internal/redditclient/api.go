@@ -10,6 +10,10 @@ import (
 
 // GetSubreddit fetches subreddit listings
 func (c *Client) GetSubreddit(ctx context.Context, subreddit, sort string) (*SubredditListing, error) {
+	if !c.authenticated {
+		return nil, ErrNotAuthenticated
+	}
+
 	endpoint := fmt.Sprintf("/r/%s/%s.json", subreddit, sort)
 
 	body, err := c.makeAPIRequest(ctx, endpoint, nil)
@@ -28,6 +32,10 @@ func (c *Client) GetSubreddit(ctx context.Context, subreddit, sort string) (*Sub
 
 // GetPost fetches a specific post and comments
 func (c *Client) GetPost(ctx context.Context, subreddit, postID string) (*PostResponse, error) {
+	if !c.authenticated {
+		return nil, ErrNotAuthenticated
+	}
+
 	endpoint := fmt.Sprintf("/r/%s/comments/%s.json", subreddit, postID)
 
 	body, err := c.makeAPIRequest(ctx, endpoint, nil)
@@ -45,6 +53,10 @@ func (c *Client) GetPost(ctx context.Context, subreddit, postID string) (*PostRe
 
 // GetUser fetches user information
 func (c *Client) GetUser(ctx context.Context, username string) (*UserResponse, error) {
+	if !c.authenticated {
+		return nil, ErrNotAuthenticated
+	}
+
 	endpoint := fmt.Sprintf("/user/%s/about.json", username)
 
 	body, err := c.makeAPIRequest(ctx, endpoint, nil)
@@ -62,6 +74,10 @@ func (c *Client) GetUser(ctx context.Context, username string) (*UserResponse, e
 
 // Search performs a Reddit search
 func (c *Client) Search(ctx context.Context, query, sort, timeframe string) (*SearchResponse, error) {
+	if !c.authenticated {
+		return nil, ErrNotAuthenticated
+	}
+
 	params := url.Values{
 		"q":    []string{query},
 		"sort": []string{sort},

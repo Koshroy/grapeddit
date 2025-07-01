@@ -26,10 +26,11 @@ func NewClient(httpClient HTTPClient) (*Client, error) {
 	userAgent := androidVersions[rand.Intn(len(androidVersions))]
 
 	return &Client{
-		httpClient: httpClient,
-		deviceID:   deviceID,
-		userAgent:  userAgent,
-		rateLimit:  100, // Start with assumed full rate limit
+		httpClient:    httpClient,
+		authenticated: false,
+		deviceID:      deviceID,
+		userAgent:     userAgent,
+		rateLimit:     100, // Start with assumed full rate limit
 		gzipReaderPool: sync.Pool{
 			New: func() interface{} {
 				// Return nil - we'll create the gzip reader on first use
