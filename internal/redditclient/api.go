@@ -97,23 +97,60 @@ func (c *Client) Search(ctx context.Context, query, sort, timeframe string) (*Se
 	return &search, nil
 }
 
-// GetComments fetches comments for a specific post
-func (c *Client) GetComments(ctx context.Context, subreddit, postID string) (*CommentsResponse, error) {
+// GetComments fetches post and comments with optional sorting
+// sort can be: confidence, top, new, controversial, old, qa
+func (c *Client) GetComments(ctx context.Context, subreddit, postID string, sort string) (*PostAndCommentsResponse, error) {
 	if !c.authenticated {
 		return nil, ErrNotAuthenticated
 	}
-
+	
 	endpoint := fmt.Sprintf("/r/%s/comments/%s.json", subreddit, postID)
+	
+	params := url.Values{}
+	if sort != "" {
+		params.Set("sort", sort)
+	}
 
-	body, err := c.makeAPIRequest(ctx, endpoint, nil)
+	body, err := c.makeAPIRequest(ctx, endpoint, params)
 	if err != nil {
 		return nil, err
 	}
 
-	var comments CommentsResponse
-	if err := json.Unmarshal(body, &comments); err != nil {
-		return nil, fmt.Errorf("failed to decode comments: %w", err)
+	var response PostAndCommentsResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to decode post and comments: %w", err)
 	}
 
-	return &comments, nil
+	return &response, nil
+}
+
+// GetMoreComments fetches additional comments using the morechildren API
+func (c *Client) GetMoreComments(ctx context.Context, linkID string, children []string) (*MoreCommentsResponse, error) {
+	if !c.authenticated {
+		return nil, ErrNotAuthenticated
+	}
+	
+	params := url.Values{
+		"api_type": []string{"json"},
+		"link_id":  []string{linkID},
+	}
+	
+	// Add children IDs (Reddit expects comma-separated string)
+	if len(children) > 0 {
+		for _, child := range children {
+			params.Add("children", child)
+		}
+	}
+
+	body, err := c.makeAPIRequest(ctx, "/api/morechildren.json", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var response MoreCommentsResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to decode more comments: %w", err)
+	}
+
+	return &response, nil
 }

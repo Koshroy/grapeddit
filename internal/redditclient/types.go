@@ -24,7 +24,8 @@ type RedditClient interface {
 	GetPost(ctx context.Context, subreddit, postID string) (*PostResponse, error)
 	GetUser(ctx context.Context, username string) (*UserResponse, error)
 	Search(ctx context.Context, query, sort, timeframe string) (*SearchResponse, error)
-	GetComments(ctx context.Context, subreddit, postID string) (*CommentsResponse, error)
+	GetComments(ctx context.Context, subreddit, postID string, sort string) (*PostAndCommentsResponse, error)
+	GetMoreComments(ctx context.Context, linkID string, children []string) (*MoreCommentsResponse, error)
 }
 
 // Client implements RedditClient
@@ -74,6 +75,7 @@ type Post struct {
 	Created     float64 `json:"created_utc"`
 }
 
+// PostResponse represents a single post response
 type PostResponse struct {
 	Kind string `json:"kind"`
 	Data struct {
@@ -81,6 +83,19 @@ type PostResponse struct {
 			Kind string      `json:"kind"`
 			Data interface{} `json:"data"`
 		} `json:"children"`
+	} `json:"data"`
+}
+
+// PostListing represents a listing containing posts
+type PostListing struct {
+	Kind string `json:"kind"`
+	Data struct {
+		Children []struct {
+			Kind string `json:"kind"`
+			Data Post   `json:"data"`
+		} `json:"children"`
+		After  *string `json:"after"`
+		Before *string `json:"before"`
 	} `json:"data"`
 }
 
@@ -104,27 +119,55 @@ type SearchResponse struct {
 	} `json:"data"`
 }
 
+// Comment represents a Reddit comment (t1)
 type Comment struct {
-	ID       string          `json:"id"`
-	Author   string          `json:"author"`
-	Body     string          `json:"body"`
-	Score    int             `json:"score"`
-	Created  float64         `json:"created_utc"`
-	ParentID string          `json:"parent_id"`
-	Replies  *CommentListing `json:"replies,omitempty"`
+	ID       string      `json:"id"`
+	Author   string      `json:"author"`
+	Body     string      `json:"body"`
+	Score    int         `json:"score"`
+	Created  float64     `json:"created_utc"`
+	ParentID string      `json:"parent_id"`
+	Replies  interface{} `json:"replies"` // Can be empty string "" or CommentListing
 }
 
+// MoreComments represents a "more comments" placeholder (more)
+type MoreComments struct {
+	Count    int      `json:"count"`
+	ID       string   `json:"id"`
+	ParentID string   `json:"parent_id"`
+	Children []string `json:"children"`
+}
+
+// CommentChild represents a child in a comment listing (can be t1 or more)
+type CommentChild struct {
+	Kind string      `json:"kind"`
+	Data interface{} `json:"data"` // Comment for t1, MoreComments for more
+}
+
+// CommentListing represents a listing of comments
 type CommentListing struct {
 	Kind string `json:"kind"`
 	Data struct {
-		Children []struct {
-			Kind string  `json:"kind"`
-			Data Comment `json:"data"`
-		} `json:"children"`
+		Children []CommentChild `json:"children"`
+		After  *string `json:"after"`
+		Before *string `json:"before"`
 	} `json:"data"`
 }
 
-type CommentsResponse []interface{}
+// PostAndCommentsResponse represents the two-element array returned by Reddit
+// Element 0: Post listing (contains the post)
+// Element 1: Comment listing (contains comments)
+type PostAndCommentsResponse [2]interface{}
+
+// MoreCommentsResponse represents the response from /api/morechildren
+type MoreCommentsResponse struct {
+	JSON struct {
+		Errors []interface{} `json:"errors"`
+		Data   struct {
+			Things []CommentChild `json:"things"`
+		} `json:"data"`
+	} `json:"json"`
+}
 
 type ErrorResponse struct {
 	Reason string `json:"reason"`
