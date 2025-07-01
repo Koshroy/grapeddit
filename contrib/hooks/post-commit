@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Post-commit hook that automatically formats Go code
+#
+
+# Check if go is available
+if ! command -v go >/dev/null 2>&1; then
+    echo "Go is not installed or not in PATH, skipping formatting"
+    exit 0
+fi
+
+# Format all Go files in the repository
+echo "Running go fmt on all Go files..."
+go fmt ./...
+
+# Check if any files were modified by gofmt
+if ! git diff --quiet; then
+    echo "Go formatting applied changes. Consider staging and committing the formatted files."
+    echo "Modified files:"
+    git diff --name-only
+else
+    echo "No formatting changes needed."
+fi
