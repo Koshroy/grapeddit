@@ -751,3 +751,69 @@ func TestTestContextTimeout(t *testing.T) {
 
 	mockHTTP.AssertExpectations(t)
 }
+
+func TestGetComments_Success(t *testing.T) {
+	mockHTTP := &MockHTTPClient{}
+	client, err := NewClient(mockHTTP)
+	require.NoError(t, err)
+	client.accessToken = "test-token"
+	client.authenticated = true
+
+	// Reddit comments endpoint returns an array with post data and comments data
+	commentsResponse := []interface{}{
+		map[string]interface{}{
+			"kind": "Listing",
+			"data": map[string]interface{}{
+				"children": []interface{}{
+					map[string]interface{}{
+						"kind": "t3",
+						"data": map[string]interface{}{
+							"id":    "abc123",
+							"title": "Test Post",
+						},
+					},
+				},
+			},
+		},
+		map[string]interface{}{
+			"kind": "Listing",
+			"data": map[string]interface{}{
+				"children": []interface{}{
+					map[string]interface{}{
+						"kind": "t1",
+						"data": map[string]interface{}{
+							"id":     "comment1",
+							"author": "commenter",
+							"body":   "Great post!",
+							"score":  5,
+						},
+					},
+				},
+			},
+		},
+	}
+	responseBody, _ := json.Marshal(commentsResponse)
+
+	mockHTTP.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+		return strings.Contains(req.URL.String(), "/r/golang/comments/abc123.json")
+	})).Return(createHTTPResponse(200, string(responseBody), nil), nil)
+
+	result, err := client.GetComments(t.Context(), "golang", "abc123")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Len(t, *result, 2) // Post data + comments data
+	mockHTTP.AssertExpectations(t)
+}
+
+func TestGetComments_NotAuthenticated(t *testing.T) {
+	mockHTTP := &MockHTTPClient{}
+	client, err := NewClient(mockHTTP)
+	require.NoError(t, err)
+
+	result, err := client.GetComments(t.Context(), "golang", "abc123")
+
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrNotAuthenticated)
+}

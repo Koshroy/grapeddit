@@ -27,6 +27,7 @@ to generate mocks when needed.
 - `contrib/` - Documentation and analysis files
   - `analysis/CLIENT-ANALYSIS.md` - Detailed analysis of Reddit OAuth authentication flow and client behavior
   - `analysis/API-METHODS.md` - Documentation of Reddit API endpoints and methods
+  - `analysis/FETCHING-POST-COMMENTS.md` - Documentation of Reddit API endpoints and methods for fetching post comments
 
 ## Key Technical Context
 

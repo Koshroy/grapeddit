@@ -35,5 +35,11 @@ func main() {
 			break
 		}
 		fmt.Printf("- %s (Score: %d)\n", post.Data.Title, post.Data.Score)
+		comments, err := client.GetComments(ctx, "r/golang", post.Data.ID)
+		if err != nil {
+			log.Printf("Failed to get comments for post %s: %v", post.Data.ID, err)
+			continue
+		}
+		fmt.Printf("Found post comments: %v\n", comments)
 	}
 }

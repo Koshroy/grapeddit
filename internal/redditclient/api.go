@@ -96,3 +96,24 @@ func (c *Client) Search(ctx context.Context, query, sort, timeframe string) (*Se
 
 	return &search, nil
 }
+
+// GetComments fetches comments for a specific post
+func (c *Client) GetComments(ctx context.Context, subreddit, postID string) (*CommentsResponse, error) {
+	if !c.authenticated {
+		return nil, ErrNotAuthenticated
+	}
+
+	endpoint := fmt.Sprintf("/r/%s/comments/%s.json", subreddit, postID)
+
+	body, err := c.makeAPIRequest(ctx, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var comments CommentsResponse
+	if err := json.Unmarshal(body, &comments); err != nil {
+		return nil, fmt.Errorf("failed to decode comments: %w", err)
+	}
+
+	return &comments, nil
+}

@@ -24,6 +24,7 @@ type RedditClient interface {
 	GetPost(ctx context.Context, subreddit, postID string) (*PostResponse, error)
 	GetUser(ctx context.Context, username string) (*UserResponse, error)
 	Search(ctx context.Context, query, sort, timeframe string) (*SearchResponse, error)
+	GetComments(ctx context.Context, subreddit, postID string) (*CommentsResponse, error)
 }
 
 // Client implements RedditClient
@@ -102,6 +103,28 @@ type SearchResponse struct {
 		} `json:"children"`
 	} `json:"data"`
 }
+
+type Comment struct {
+	ID       string          `json:"id"`
+	Author   string          `json:"author"`
+	Body     string          `json:"body"`
+	Score    int             `json:"score"`
+	Created  float64         `json:"created_utc"`
+	ParentID string          `json:"parent_id"`
+	Replies  *CommentListing `json:"replies,omitempty"`
+}
+
+type CommentListing struct {
+	Kind string `json:"kind"`
+	Data struct {
+		Children []struct {
+			Kind string  `json:"kind"`
+			Data Comment `json:"data"`
+		} `json:"children"`
+	} `json:"data"`
+}
+
+type CommentsResponse []interface{}
 
 type ErrorResponse struct {
 	Reason string `json:"reason"`
