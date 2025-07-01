@@ -149,8 +149,8 @@ type CommentListing struct {
 	Kind string `json:"kind"`
 	Data struct {
 		Children []CommentChild `json:"children"`
-		After  *string `json:"after"`
-		Before *string `json:"before"`
+		After    *string        `json:"after"`
+		Before   *string        `json:"before"`
 	} `json:"data"`
 }
 

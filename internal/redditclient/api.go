@@ -103,9 +103,9 @@ func (c *Client) GetComments(ctx context.Context, subreddit, postID string, sort
 	if !c.authenticated {
 		return nil, ErrNotAuthenticated
 	}
-	
+
 	endpoint := fmt.Sprintf("/r/%s/comments/%s.json", subreddit, postID)
-	
+
 	params := url.Values{}
 	if sort != "" {
 		params.Set("sort", sort)
@@ -129,12 +129,12 @@ func (c *Client) GetMoreComments(ctx context.Context, linkID string, children []
 	if !c.authenticated {
 		return nil, ErrNotAuthenticated
 	}
-	
+
 	params := url.Values{
 		"api_type": []string{"json"},
 		"link_id":  []string{linkID},
 	}
-	
+
 	// Add children IDs (Reddit expects comma-separated string)
 	if len(children) > 0 {
 		for _, child := range children {
