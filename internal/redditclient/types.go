@@ -1,7 +1,6 @@
 package redditclient
 
 import (
-	"compress/gzip"
 	"context"
 	"net/http"
 	"sync"
@@ -23,16 +22,15 @@ type RedditClient interface {
 
 // Client implements RedditClient
 type Client struct {
-	httpClient    HTTPClient
-	accessToken   string
-	loid          string
-	session       string
-	deviceID      string
-	userAgent     string
-	rateLimitLock sync.RWMutex
-	rateLimit     int
-	gzipReader    *gzip.Reader
-	gzipMutex     sync.Mutex
+	httpClient     HTTPClient
+	accessToken    string
+	loid           string
+	session        string
+	deviceID       string
+	userAgent      string
+	rateLimitLock  sync.RWMutex
+	rateLimit      int
+	gzipReaderPool sync.Pool
 }
 
 // OAuth response structures

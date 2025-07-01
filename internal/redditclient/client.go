@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,6 +30,15 @@ func NewClient(httpClient HTTPClient) (*Client, error) {
 		deviceID:   deviceID,
 		userAgent:  userAgent,
 		rateLimit:  100, // Start with assumed full rate limit
+		gzipReaderPool: sync.Pool{
+			New: func() interface{} {
+				// Return nil - we'll create the gzip reader on first use
+				// This works because sync.Pool.New may return nil at any time
+				// Calling code must check for nil before using the reader anyway so
+				// we lazily create the reader.
+				return nil
+			},
+		},
 	}, nil
 }
 
@@ -54,23 +64,32 @@ func (c *Client) readResponseBody(resp *http.Response) ([]byte, error) {
 
 	// Check if response is gzip encoded
 	if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") {
-		c.gzipMutex.Lock()
-		defer c.gzipMutex.Unlock()
+		// Get a gzip reader from the pool
+		poolItem := c.gzipReaderPool.Get()
+		var gr *gzip.Reader
 
-		// Lazy initialization: create gzip reader only when first needed
-		if c.gzipReader == nil {
+		if poolItem == nil {
+			// Create a new gzip reader if pool is empty
 			var err error
-			c.gzipReader, err = gzip.NewReader(resp.Body)
+			gr, err = gzip.NewReader(resp.Body)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create gzip reader: %w", err)
 			}
 		} else {
-			// Reuse existing gzip reader by resetting it with new input
-			if err := c.gzipReader.Reset(resp.Body); err != nil {
+			// Reuse existing gzip reader from pool
+			gr = poolItem.(*gzip.Reader)
+			if err := gr.Reset(resp.Body); err != nil {
 				return nil, fmt.Errorf("failed to reset gzip reader: %w", err)
 			}
 		}
-		reader = c.gzipReader
+
+		// Read all data
+		data, err := io.ReadAll(gr)
+
+		// Return the reader to the pool for reuse
+		c.gzipReaderPool.Put(gr)
+
+		return data, err
 	}
 
 	return io.ReadAll(reader)
@@ -145,12 +164,12 @@ func (c *Client) handleRestrictedContent(ctx context.Context, originalReq *http.
 		if err != nil {
 			return nil, fmt.Errorf("failed to create retry request: %w", err)
 		}
-		
+
 		// Copy headers from original request
 		for k, v := range originalReq.Header {
 			retryReq.Header[k] = v
 		}
-		
+
 		// Add cookie to accept content warning
 		retryReq.Header.Set("Cookie", CONTENT_WARNING_ACCEPT_COOKIE)
 

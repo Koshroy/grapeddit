@@ -454,10 +454,9 @@ func TestNewClient_Success(t *testing.T) {
 	assert.NotNil(t, client.httpClient)
 	assert.NotEmpty(t, client.deviceID)
 	assert.NotEmpty(t, client.userAgent)
-	assert.Nil(t, client.gzipReader) // Should be nil until first gzip response
 }
 
-func TestGzipReaderReuse(t *testing.T) {
+func TestGzipDecompression(t *testing.T) {
 	mockHTTP := &MockHTTPClient{}
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
@@ -466,27 +465,31 @@ func TestGzipReaderReuse(t *testing.T) {
 	// Create gzipped response content
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
-	testContent := `{"kind": "Listing", "data": {"children": []}}`
+	testContent := `{"kind": "Listing", "data": {"children": [{"kind": "t3", "data": {"id": "test123", "title": "Test Gzip Post", "score": 42}}]}}`
 	_, err = gzipWriter.Write([]byte(testContent))
 	require.NoError(t, err)
 	err = gzipWriter.Close()
 	require.NoError(t, err)
 
-	// Mock first gzipped response
+	// Mock gzipped response
 	mockHTTP.On("Do", mock.AnythingOfType("*http.Request")).
 		Return(createHTTPResponse(200, buf.String(), map[string]string{
 			"Content-Encoding": "gzip",
 		}), nil).Once()
 
-	// First request should create gzip reader
-	_, err = client.GetSubreddit(t.Context(), "test", "hot")
+	// Request should properly decompress gzipped content
+	result, err := client.GetSubreddit(t.Context(), "test", "hot")
 	require.NoError(t, err)
-	assert.NotNil(t, client.gzipReader) // Should now be initialized
+	assert.NotNil(t, result)
+	assert.Equal(t, "Listing", result.Kind)
+	assert.Len(t, result.Data.Children, 1)
+	assert.Equal(t, "Test Gzip Post", result.Data.Children[0].Data.Title)
+	assert.Equal(t, 42, result.Data.Children[0].Data.Score)
 
-	// Mock second gzipped response
+	// Mock second gzipped response to test pool reuse
 	var buf2 bytes.Buffer
 	gzipWriter2 := gzip.NewWriter(&buf2)
-	testContent2 := `{"kind": "Listing", "data": {"children": [{"kind": "t3", "data": {"title": "test"}}]}}`
+	testContent2 := `{"kind": "Listing", "data": {"children": [{"kind": "t3", "data": {"id": "test456", "title": "Another Gzip Post", "score": 84}}]}}`
 	_, err = gzipWriter2.Write([]byte(testContent2))
 	require.NoError(t, err)
 	err = gzipWriter2.Close()
@@ -497,12 +500,59 @@ func TestGzipReaderReuse(t *testing.T) {
 			"Content-Encoding": "gzip",
 		}), nil).Once()
 
-	// Second request should reuse the same gzip reader instance
-	gzipReaderBefore := client.gzipReader
+	// Second request should also work with pooled gzip readers
 	result2, err := client.GetSubreddit(t.Context(), "test2", "hot")
 	require.NoError(t, err)
-	assert.Same(t, gzipReaderBefore, client.gzipReader) // Same instance reused
 	assert.NotNil(t, result2)
+	assert.Equal(t, "Listing", result2.Kind)
+	assert.Len(t, result2.Data.Children, 1)
+	assert.Equal(t, "Another Gzip Post", result2.Data.Children[0].Data.Title)
+	assert.Equal(t, 84, result2.Data.Children[0].Data.Score)
+
+	mockHTTP.AssertExpectations(t)
+}
+
+func TestMultipleGzipRequests(t *testing.T) {
+	mockHTTP := &MockHTTPClient{}
+	client, err := NewClient(mockHTTP)
+	require.NoError(t, err)
+	client.accessToken = "test-token"
+
+	// Helper function to create gzipped response content
+	createGzippedResponse := func(title string) string {
+		var buf bytes.Buffer
+		gzipWriter := gzip.NewWriter(&buf)
+		testContent := fmt.Sprintf(`{"kind": "Listing", "data": {"children": [{"kind": "t3", "data": {"id": "test", "title": "%s", "score": 100}}]}}`, title)
+		gzipWriter.Write([]byte(testContent))
+		gzipWriter.Close()
+		return buf.String()
+	}
+
+	// Mock each response individually with fresh gzipped content
+	mockHTTP.On("Do", mock.AnythingOfType("*http.Request")).
+		Return(createHTTPResponse(200, createGzippedResponse("Request 1"), map[string]string{
+			"Content-Encoding": "gzip",
+		}), nil).Once()
+
+	mockHTTP.On("Do", mock.AnythingOfType("*http.Request")).
+		Return(createHTTPResponse(200, createGzippedResponse("Request 2"), map[string]string{
+			"Content-Encoding": "gzip",
+		}), nil).Once()
+
+	mockHTTP.On("Do", mock.AnythingOfType("*http.Request")).
+		Return(createHTTPResponse(200, createGzippedResponse("Request 3"), map[string]string{
+			"Content-Encoding": "gzip",
+		}), nil).Once()
+
+	// Test sequential requests to verify pool reuse works
+	for i := 1; i <= 3; i++ {
+		result, err := client.GetSubreddit(t.Context(), fmt.Sprintf("test%d", i), "hot")
+		require.NoError(t, err, "Request %d should succeed", i)
+		require.NotNil(t, result, "Result %d should not be nil", i)
+		require.Len(t, result.Data.Children, 1, "Result %d should have one child", i)
+		expectedTitle := fmt.Sprintf("Request %d", i)
+		assert.Equal(t, expectedTitle, result.Data.Children[0].Data.Title, "Request %d should have correct title", i)
+	}
 
 	mockHTTP.AssertExpectations(t)
 }
@@ -600,14 +650,14 @@ func TestContextPropagation(t *testing.T) {
 		// Check that the request context is derived from our test context
 		reqCtx := req.Context()
 		assert.NotNil(t, reqCtx)
-		
+
 		// The request context should have the same deadline as our test context (if any)
 		if deadline, ok := testCtx.Deadline(); ok {
 			reqDeadline, reqOk := reqCtx.Deadline()
 			assert.True(t, reqOk)
 			assert.Equal(t, deadline, reqDeadline)
 		}
-		
+
 		return strings.Contains(req.URL.String(), "/r/golang/hot.json")
 	})).Return(createHTTPResponse(200, string(responseBody), map[string]string{
 		"x-ratelimit-remaining": "50",
@@ -628,7 +678,7 @@ func TestTestContextTimeout(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping timeout test in short mode")
 	}
-	
+
 	mockHTTP := &MockHTTPClient{}
 	client, err := NewClient(mockHTTP)
 	require.NoError(t, err)
