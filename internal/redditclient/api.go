@@ -113,7 +113,7 @@ func (c *Client) GetComments(ctx context.Context, subreddit, postID string, sort
 
 	body, err := c.makeAPIRequest(ctx, endpoint, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error making GetComments API request: %w", err)
 	}
 
 	var response PostAndCommentsResponse
