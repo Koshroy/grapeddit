@@ -53,7 +53,24 @@ func TestGetComments_Success(t *testing.T) {
 							"body":      "Great post!",
 							"score":     5,
 							"parent_id": "t3_abc123",
-							"replies":   "", // Empty string for no replies
+							"replies": map[string]any{
+								"kind": "Listing",
+								"data": map[string]interface{}{
+									"children": []interface{}{
+										map[string]interface{}{
+											"kind": "t1",
+											"data": map[string]interface{}{
+												"id":        "comment2",
+												"author":    "commenter2",
+												"body":      "Greater post!",
+												"score":     5,
+												"parent_id": "t1_comment1",
+												"replies":   map[string][]any{},
+											},
+										},
+									},
+								},
+							},
 						},
 					},
 					map[string]interface{}{
