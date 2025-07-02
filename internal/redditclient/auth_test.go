@@ -106,9 +106,9 @@ func TestAuthenticationFlow_Integration(t *testing.T) {
 		// Verify request body
 		body, _ := io.ReadAll(req.Body)
 		req.Body = io.NopCloser(bytes.NewReader(body)) // Reset body for actual use
-		var reqBody map[string]interface{}
+		var reqBody map[string]any
 		json.Unmarshal(body, &reqBody)
-		hasCorrectScopes := len(reqBody["scopes"].([]interface{})) == 3
+		hasCorrectScopes := len(reqBody["scopes"].([]any)) == 3
 
 		return hasAuth && hasUserAgent && hasDeviceID && hasContentType && hasCorrectScopes
 	})).Return(createHTTPResponse(200, string(responseBody), map[string]string{

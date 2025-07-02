@@ -32,7 +32,7 @@ func NewClient(httpClient HTTPClient) (*Client, error) {
 		userAgent:     userAgent,
 		rateLimit:     100, // Start with assumed full rate limit
 		gzipReaderPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				// Return nil - we'll create the gzip reader on first use
 				// This works because sync.Pool.New may return nil at any time
 				// Calling code must check for nil before using the reader anyway so

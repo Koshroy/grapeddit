@@ -80,8 +80,8 @@ type PostResponse struct {
 	Kind string `json:"kind"`
 	Data struct {
 		Children []struct {
-			Kind string      `json:"kind"`
-			Data interface{} `json:"data"`
+			Kind string `json:"kind"`
+			Data any    `json:"data"`
 		} `json:"children"`
 	} `json:"data"`
 }
@@ -121,13 +121,13 @@ type SearchResponse struct {
 
 // Comment represents a Reddit comment (t1)
 type Comment struct {
-	ID       string      `json:"id"`
-	Author   string      `json:"author"`
-	Body     string      `json:"body"`
-	Score    int         `json:"score"`
-	Created  float64     `json:"created_utc"`
-	ParentID string      `json:"parent_id"`
-	Replies  interface{} `json:"replies"` // Can be empty string "" or CommentListing
+	ID       string  `json:"id"`
+	Author   string  `json:"author"`
+	Body     string  `json:"body"`
+	Score    int     `json:"score"`
+	Created  float64 `json:"created_utc"`
+	ParentID string  `json:"parent_id"`
+	Replies  any     `json:"replies"` // Can be empty string "" or CommentListing
 }
 
 // MoreComments represents a "more comments" placeholder (more)
@@ -140,8 +140,8 @@ type MoreComments struct {
 
 // CommentChild represents a child in a comment listing (can be t1 or more)
 type CommentChild struct {
-	Kind string      `json:"kind"`
-	Data interface{} `json:"data"` // Comment for t1, MoreComments for more
+	Kind string `json:"kind"`
+	Data any    `json:"data"` // Comment for t1, MoreComments for more
 }
 
 // CommentListing represents a listing of comments
@@ -157,12 +157,12 @@ type CommentListing struct {
 // PostAndCommentsResponse represents the two-element array returned by Reddit
 // Element 0: Post listing (contains the post)
 // Element 1: Comment listing (contains comments)
-type PostAndCommentsResponse [2]interface{}
+type PostAndCommentsResponse [2]any
 
 // MoreCommentsResponse represents the response from /api/morechildren
 type MoreCommentsResponse struct {
 	JSON struct {
-		Errors []interface{} `json:"errors"`
+		Errors []any `json:"errors"`
 		Data   struct {
 			Things []CommentChild `json:"things"`
 		} `json:"data"`

@@ -20,15 +20,15 @@ func TestGetComments_Success(t *testing.T) {
 	client.authenticated = true
 
 	// Reddit comments endpoint returns a two-element array: [post_listing, comment_listing]
-	commentsResponse := [2]interface{}{
+	commentsResponse := [2]any{
 		// Element 0: Post listing
-		map[string]interface{}{
+		map[string]any{
 			"kind": "Listing",
-			"data": map[string]interface{}{
-				"children": []interface{}{
-					map[string]interface{}{
+			"data": map[string]any{
+				"children": []any{
+					map[string]any{
 						"kind": "t3",
-						"data": map[string]interface{}{
+						"data": map[string]any{
 							"id":           "abc123",
 							"title":        "Test Post",
 							"author":       "postauthor",
@@ -41,13 +41,13 @@ func TestGetComments_Success(t *testing.T) {
 			},
 		},
 		// Element 1: Comment listing
-		map[string]interface{}{
+		map[string]any{
 			"kind": "Listing",
-			"data": map[string]interface{}{
-				"children": []interface{}{
-					map[string]interface{}{
+			"data": map[string]any{
+				"children": []any{
+					map[string]any{
 						"kind": "t1",
-						"data": map[string]interface{}{
+						"data": map[string]any{
 							"id":        "comment1",
 							"author":    "commenter",
 							"body":      "Great post!",
@@ -55,11 +55,11 @@ func TestGetComments_Success(t *testing.T) {
 							"parent_id": "t3_abc123",
 							"replies": map[string]any{
 								"kind": "Listing",
-								"data": map[string]interface{}{
-									"children": []interface{}{
-										map[string]interface{}{
+								"data": map[string]any{
+									"children": []any{
+										map[string]any{
 											"kind": "t1",
-											"data": map[string]interface{}{
+											"data": map[string]any{
 												"id":        "comment2",
 												"author":    "commenter2",
 												"body":      "Greater post!",
@@ -73,9 +73,9 @@ func TestGetComments_Success(t *testing.T) {
 							},
 						},
 					},
-					map[string]interface{}{
+					map[string]any{
 						"kind": "more",
-						"data": map[string]interface{}{
+						"data": map[string]any{
 							"count":     10,
 							"id":        "more123",
 							"parent_id": "t3_abc123",
@@ -124,14 +124,14 @@ func TestGetMoreComments_Success(t *testing.T) {
 	client.authenticated = true
 
 	// Response from /api/morechildren endpoint
-	moreResponse := map[string]interface{}{
-		"json": map[string]interface{}{
-			"errors": []interface{}{},
-			"data": map[string]interface{}{
-				"things": []interface{}{
-					map[string]interface{}{
+	moreResponse := map[string]any{
+		"json": map[string]any{
+			"errors": []any{},
+			"data": map[string]any{
+				"things": []any{
+					map[string]any{
 						"kind": "t1",
-						"data": map[string]interface{}{
+						"data": map[string]any{
 							"id":        "extracomment1",
 							"author":    "anotheruser",
 							"body":      "Additional comment loaded",

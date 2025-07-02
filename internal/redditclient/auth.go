@@ -15,7 +15,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 	// OAuth Client ID for Reddit Android app
 	auth := base64.StdEncoding.EncodeToString([]byte(ANDROID_CLIENT_ID + ":"))
 
-	body := map[string]interface{}{
+	body := map[string]any{
 		"scopes": []string{"*", "email", "pii"},
 	}
 	jsonBody, err := json.Marshal(body)

@@ -22,17 +22,17 @@ func TestGetPost_Success(t *testing.T) {
 		Kind: "Listing",
 		Data: struct {
 			Children []struct {
-				Kind string      `json:"kind"`
-				Data interface{} `json:"data"`
+				Kind string `json:"kind"`
+				Data any    `json:"data"`
 			} `json:"children"`
 		}{
 			Children: []struct {
-				Kind string      `json:"kind"`
-				Data interface{} `json:"data"`
+				Kind string `json:"kind"`
+				Data any    `json:"data"`
 			}{
 				{
 					Kind: "t3",
-					Data: map[string]interface{}{
+					Data: map[string]any{
 						"id":    "abc123",
 						"title": "Test Post",
 					},
